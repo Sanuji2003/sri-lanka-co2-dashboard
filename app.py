@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from datetime import datetime
 
@@ -9,7 +8,7 @@ import streamlit as st
 
 st.set_page_config(
     page_title="Sri Lanka CO2 Emissions Dashboard",
-    page_icon="🌿",
+    page_icon=":seedling:",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
