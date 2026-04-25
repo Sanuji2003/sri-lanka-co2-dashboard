@@ -189,6 +189,23 @@ def render_insight(col, accent: str, icon: str, headline: str, value: str, body:
 st.markdown(
     f"""
     <style>
+    [data-testid="stHeader"] {{
+        display: none !important;
+        height: 0 !important;
+    }}
+
+    [data-testid="stToolbar"] {{
+        display: none !important;
+    }}
+
+    [data-testid="stAppToolbar"] {{
+        display: none !important;
+    }}
+
+    [data-testid="stStatusWidget"] {{
+        display: none !important;
+    }}
+
     [data-testid="stDecoration"] {{
         display: none;
     }}
