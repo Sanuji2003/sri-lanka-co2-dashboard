@@ -554,15 +554,12 @@ with left_col:
 
     with st.container(border=True):
         st.markdown("<div class='sidebar-title'>Dataset Overview</div>", unsafe_allow_html=True)
-        dataset_col1, dataset_col2 = st.columns(2, gap="small")
-        with dataset_col1:
-            render_dataset_row("🗂️", "Records", f"{len(df):,}")
-            render_dataset_row("📍", "Locations", f"{all_locations:,}")
-            render_dataset_row("🧩", "Sectors", f"{df['sector_label'].nunique()}")
-        with dataset_col2:
-            render_dataset_row("🏭", "Subsectors", f"{all_subsectors}")
-            render_dataset_row("📅", "Years", format_year_span(all_years))
-            render_dataset_row("🕒", "Updated", last_updated)
+        render_dataset_row("🗂️", "Records", f"{len(df):,}")
+        render_dataset_row("📍", "Locations", f"{all_locations:,}")
+        render_dataset_row("🧩", "Sectors", f"{df['sector_label'].nunique()}")
+        render_dataset_row("🏭", "Subsectors", f"{all_subsectors}")
+        render_dataset_row("📅", "Years", format_year_span(all_years))
+        render_dataset_row("🕒", "Updated", last_updated)
 
 # =========================
 # FILTER DATA
