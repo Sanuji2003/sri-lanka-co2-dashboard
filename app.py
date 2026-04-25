@@ -330,17 +330,26 @@ st.markdown(
 
     /* ---- Dataset overview ---- */
     .dataset-item {{
-        display: flex; justify-content: space-between; align-items: center;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: start;
         gap: 0.32rem; padding: 0.18rem 0;
         border-bottom: 1px solid rgba(255,255,255,0.06);
     }}
     .dataset-item:last-child {{ border-bottom: none; }}
-    .dataset-left {{ display: flex; align-items: center; gap: 0.3rem; min-width: 0; }}
+    .dataset-left {{
+        display: flex; align-items: center; gap: 0.3rem;
+        min-width: 0; overflow: hidden;
+    }}
     .dataset-icon {{ font-size: 0.74rem; line-height: 1; }}
     .dataset-label {{ color: #D3E1E8; font-size: 0.68rem; }}
     .dataset-value {{
         color: #8EDBE0; font-size: 0.72rem; font-weight: 800;
-        text-align: right; white-space: nowrap;
+        min-width: 0;
+        text-align: right;
+        white-space: normal;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
     }}
 
     /* ---- KPI cards ---- */
