@@ -1,2 +1,6 @@
 __pycache__/
 *.pyc
+streamlit*.log
+dashboard_*_check*.png
+treemap_check*.png
+.streamlit/secrets.toml
