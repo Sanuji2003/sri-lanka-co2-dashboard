@@ -31,3 +31,12 @@ This repository is ready to deploy on Streamlit Community Cloud with:
 - Repository: `Sanuji2003/sri-lanka-co2-dashboard`
 - Branch: `main`
 - Entrypoint: `app.py`
+
+## Streamlit Cloud notes
+
+- If you still see Streamlit's top toolbar while signed in as the app owner, open the app in a logged-out window to compare.
+- For the cleanest shared view without the Streamlit app chrome, use your deployed app URL with `?embed=true`:
+
+```text
+https://YOUR-APP-NAME.streamlit.app/?embed=true
+```
