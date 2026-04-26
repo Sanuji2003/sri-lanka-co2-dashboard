@@ -38,5 +38,5 @@ This repository is ready to deploy on Streamlit Community Cloud with:
 - For the cleanest shared view without the Streamlit app chrome, use your deployed app URL with `?embed=true`:
 
 ```text
-https://YOUR-APP-NAME.streamlit.app/?embed=true
+(https://sri-lanka-co2-dashboard.streamlit.app/)
 ```
