@@ -25,7 +25,7 @@ columns_to_keep = [
     "sector",            # broad category e.g. transportation
     "subsector",         # specific e.g. road-transportation
     "sourceType",        # gadm-aggregation or point-source
-    "emissionsQuantity", # main value: tonnes of CO2
+    "emissionsQuantity", # main value: metric tonnes of CO2
     "activity",          # energy used
     "capacity",          # size of facility
     "year",              # 2024 or 2025 only
@@ -38,23 +38,18 @@ print("Columns after cleaning:", df.columns.tolist())
 # '2024' (text) becomes 2024 (number) so Python sorts correctly
 df["year"] = df["year"].astype(int)
 
-# STEP 6: Add a new column - emissions in MILLIONS of tonnes
-# Raw numbers are huge (e.g. 9,863,554 tonnes)
-# Dividing by 1 million gives 9.86 which is easier to read on charts
-df["emissions_mt"] = df["emissionsQuantity"] / 1_000_000
-
-# STEP 7: Check for any missing values
+# STEP 6: Check for any missing values
 # isnull().sum() counts empty cells in each column
 # All should be zero after our cleaning
 print("\nMissing values per column:")
 print(df.isnull().sum())
 
-# STEP 8: Print a summary
+# STEP 7: Print a summary
 print("\nSectors:", df["sector"].unique())
 print("Years remaining:", sorted(df["year"].unique()))
 print("Total rows in clean data:", len(df))
 
-# STEP 9: Save the clean data to a new file
+# STEP 8: Save the clean data to a new file
 # index=False means do not add an extra number column
 try:
     df.to_csv("clean_data.csv", index=False)

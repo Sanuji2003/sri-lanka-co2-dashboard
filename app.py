@@ -39,6 +39,7 @@ SECTOR_COLORS = {
 }
 
 CHART_CONFIG = {"displayModeBar": False}
+EMISSIONS_COL = "emissionsQuantity"
 
 # =========================
 # HELPERS
@@ -57,8 +58,9 @@ def compact_text(value: str, limit: int = 24) -> str:
     return text if len(text) <= limit else f"{text[:limit - 3]}..."
 
 
-def format_mt(value: float) -> str:
-    return f"{float(value):.2f} Mt"
+def format_tonnes(value: float) -> str:
+    value = float(value)
+    return f"{value:,.0f} t"
 
 
 def format_year_span(years: list) -> str:
@@ -68,11 +70,25 @@ def format_year_span(years: list) -> str:
     return str(years[0]) if len(years) == 1 else f"{years[0]} - {years[-1]}"
 
 
-def format_mt_precise(value: float) -> str:
+def format_tonnes_precise(value: float) -> str:
     value = float(value)
-    if 0 < abs(value) < 0.01:
-        return f"{value:.3f} Mt"
-    return f"{value:.2f} Mt"
+    if abs(value) >= 1_000:
+        return f"{value:,.0f} t"
+    if abs(value) >= 1:
+        return f"{value:,.2f} t"
+    return f"{value:,.3f} t"
+
+
+def format_tonnes_compact(value: float) -> str:
+    value = float(value)
+    abs_value = abs(value)
+    if abs_value >= 1_000_000_000:
+        return f"{value / 1_000_000_000:.2f}B t"
+    if abs_value >= 1_000_000:
+        return f"{value / 1_000_000:.2f}M t"
+    if abs_value >= 1_000:
+        return f"{value / 1_000:.2f}K t"
+    return f"{value:.0f} t"
 
 
 def lighten_hex(hex_color: str, factor: float = 0.12) -> str:
@@ -478,7 +494,7 @@ except FileNotFoundError:
     st.error("clean_data.csv was not found. Put clean_data.csv in the same folder as app.py.")
     st.stop()
 
-for col in ["year", "emissions_mt", "emissionsQuantity", "activity", "capacity"]:
+for col in ["year", EMISSIONS_COL, "activity", "capacity"]:
     if col in df.columns:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
@@ -583,24 +599,24 @@ if filtered_df.empty:
 # =========================
 # AGGREGATIONS
 # =========================
-total_emissions_mt = filtered_df["emissions_mt"].sum()
+total_emissions_tonnes = filtered_df[EMISSIONS_COL].sum()
 
 sector_totals = (
-    filtered_df.groupby("sector_label", dropna=False)["emissions_mt"]
+    filtered_df.groupby("sector_label", dropna=False)[EMISSIONS_COL]
     .sum()
     .reset_index()
-    .sort_values("emissions_mt", ascending=False)
+    .sort_values(EMISSIONS_COL, ascending=False)
 )
 
 location_totals = (
-    filtered_df.groupby("name", dropna=False)["emissions_mt"]
+    filtered_df.groupby("name", dropna=False)[EMISSIONS_COL]
     .sum()
     .reset_index()
-    .sort_values("emissions_mt", ascending=False)
+    .sort_values(EMISSIONS_COL, ascending=False)
 )
 
 year_sector = (
-    filtered_df.groupby(["year", "sector_label"], dropna=False)["emissions_mt"]
+    filtered_df.groupby(["year", "sector_label"], dropna=False)[EMISSIONS_COL]
     .sum()
     .reset_index()
     .sort_values(["year", "sector_label"])
@@ -608,10 +624,10 @@ year_sector = (
 
 selected_years = sorted(filtered_df["year"].dropna().astype(int).unique().tolist()) if "year" in filtered_df.columns else []
 top_sector_name = sector_totals.iloc[0]["sector_label"] if not sector_totals.empty else "N/A"
-top_sector_value = sector_totals.iloc[0]["emissions_mt"] if not sector_totals.empty else 0.0
-top_sector_share = (top_sector_value / total_emissions_mt * 100) if total_emissions_mt else 0.0
+top_sector_value = sector_totals.iloc[0][EMISSIONS_COL] if not sector_totals.empty else 0.0
+top_sector_share = (top_sector_value / total_emissions_tonnes * 100) if total_emissions_tonnes else 0.0
 top_location_name = str(location_totals.iloc[0]["name"]) if not location_totals.empty else "N/A"
-top_location_value = location_totals.iloc[0]["emissions_mt"] if not location_totals.empty else 0.0
+top_location_value = location_totals.iloc[0][EMISSIONS_COL] if not location_totals.empty else 0.0
 filtered_locations = filtered_df["name"].nunique() if "name" in filtered_df.columns else 0
 filtered_subsectors = filtered_df["subsector_label"].nunique()
 
@@ -626,7 +642,7 @@ has_two_years = len(year_list) == 2
 if has_two_years:
     yr_a, yr_b = year_list[0], year_list[1]
     pivot_yoy = (
-        yoy_df.groupby(["year", "sector_label"])["emissions_mt"]
+        yoy_df.groupby(["year", "sector_label"])[EMISSIONS_COL]
         .sum()
         .unstack(level=0)
         .fillna(0)
@@ -642,8 +658,8 @@ if has_two_years:
     # Fastest growing sector
     fastest_sector = max(yoy_changes, key=yoy_changes.get) if yoy_changes else None
     fastest_pct = yoy_changes.get(fastest_sector, 0) if fastest_sector else 0
-    overall_a = float(yoy_df[yoy_df["year"] == yr_a]["emissions_mt"].sum())
-    overall_b = float(yoy_df[yoy_df["year"] == yr_b]["emissions_mt"].sum())
+    overall_a = float(yoy_df[yoy_df["year"] == yr_a][EMISSIONS_COL].sum())
+    overall_b = float(yoy_df[yoy_df["year"] == yr_b][EMISSIONS_COL].sum())
     overall_yoy_pct = (overall_b - overall_a) / overall_a * 100 if overall_a > 0 else 0
 else:
     fastest_sector = None
@@ -654,23 +670,23 @@ else:
 top2_share = 0.0
 top2_names = ""
 if len(location_totals) >= 2:
-    top2_val = location_totals.head(2)["emissions_mt"].sum()
-    top2_share = (top2_val / total_emissions_mt * 100) if total_emissions_mt else 0
+    top2_val = location_totals.head(2)[EMISSIONS_COL].sum()
+    top2_share = (top2_val / total_emissions_tonnes * 100) if total_emissions_tonnes else 0
     top2_names = " & ".join(compact_text(n, 18) for n in location_totals.head(2)["name"].tolist())
 
 # Dominant subsector
 subsector_totals = (
-    filtered_df.groupby("subsector_label", dropna=False)["emissions_mt"]
+    filtered_df.groupby("subsector_label", dropna=False)[EMISSIONS_COL]
     .sum()
     .sort_values(ascending=False)
 )
 dom_sub = subsector_totals.index[0] if not subsector_totals.empty else "N/A"
-dom_sub_share = (float(subsector_totals.iloc[0]) / total_emissions_mt * 100) if total_emissions_mt and not subsector_totals.empty else 0
+dom_sub_share = (float(subsector_totals.iloc[0]) / total_emissions_tonnes * 100) if total_emissions_tonnes and not subsector_totals.empty else 0
 
 # Smallest sector
 smallest_sector_name = sector_totals.iloc[-1]["sector_label"] if not sector_totals.empty else "N/A"
-smallest_sector_val = sector_totals.iloc[-1]["emissions_mt"] if not sector_totals.empty else 0.0
-smallest_sector_share = (float(smallest_sector_val) / total_emissions_mt * 100) if total_emissions_mt else 0.0
+smallest_sector_val = sector_totals.iloc[-1][EMISSIONS_COL] if not sector_totals.empty else 0.0
+smallest_sector_share = (float(smallest_sector_val) / total_emissions_tonnes * 100) if total_emissions_tonnes else 0.0
 
 compact_chart_height = 188
 treemap_chart_height = 184
@@ -681,9 +697,9 @@ treemap_chart_height = 184
 with right_col:
     # ---- KPI Row ----
     kpi_cols = st.columns(6, gap="small")
-    render_kpi(kpi_cols[0], "☁", "Total CO₂ Emissions", format_mt(total_emissions_mt), "Million Tonnes CO₂", TEAL)
+    render_kpi(kpi_cols[0], "☁", "Total CO₂ Emissions", format_tonnes(total_emissions_tonnes), "Metric Tonnes CO₂", TEAL)
     render_kpi(kpi_cols[1], "◔", "Top Emitting Sector", top_sector_name, f"{top_sector_share:.1f}% of total", CYAN)
-    render_kpi(kpi_cols[2], "▥", "Top Emitting Location", compact_text(top_location_name, 16), format_mt(top_location_value), "#8FEFE0")
+    render_kpi(kpi_cols[2], "▥", "Top Emitting Location", compact_text(top_location_name, 16), format_tonnes(top_location_value), "#8FEFE0")
     render_kpi(kpi_cols[3], "🗓", "Years Covered", format_year_span(selected_years), f"{len(selected_years)} Year(s)", "#98E7E0")
     render_kpi(kpi_cols[4], "📍", "Total Locations", f"{filtered_locations:,}", "Unique Sources", PINK)
     render_kpi(kpi_cols[5], "🏭", "Total Subsectors", f"{filtered_subsectors}", f"Across {filtered_df['sector_label'].nunique()} Sectors", PURPLE)
@@ -699,14 +715,14 @@ with right_col:
                 fig_share = px.pie(
                     sector_totals,
                     names="sector_label",
-                    values="emissions_mt",
+                    values=EMISSIONS_COL,
                     hole=0.42,
                     color="sector_label",
                     color_discrete_map=SECTOR_COLORS,
                 )
                 fig_share.update_traces(textposition="inside", textinfo="percent")
                 fig_share.add_annotation(
-                    text=f"<b>{total_emissions_mt:.2f} Mt</b><br>Total",
+                    text=f"<b>{format_tonnes_compact(total_emissions_tonnes)}</b><br>Total",
                     x=0.5,
                     y=0.5,
                     showarrow=False,
@@ -731,11 +747,11 @@ with right_col:
                 fig_sector = px.bar(
                     sector_totals,
                     x="sector_label",
-                    y="emissions_mt",
+                    y=EMISSIONS_COL,
                     color="sector_label",
                     color_discrete_map=SECTOR_COLORS,
-                    text_auto=".2f",
-                    labels={"sector_label": "", "emissions_mt": "Emissions (Mt CO2)"},
+                    text_auto=".3s",
+                    labels={"sector_label": "", EMISSIONS_COL: "Emissions (t CO2)"},
                 )
                 fig_sector.update_traces(width=0.42)
                 fig_sector.update_layout(showlegend=False, bargap=0.52)
@@ -749,11 +765,11 @@ with right_col:
                 fig_trend = px.line(
                     year_sector,
                     x="year",
-                    y="emissions_mt",
+                    y=EMISSIONS_COL,
                     color="sector_label",
                     markers=True,
                     color_discrete_map=SECTOR_COLORS,
-                    labels={"year": "", "emissions_mt": "Emissions (Mt CO2)", "sector_label": ""},
+                    labels={"year": "", EMISSIONS_COL: "Emissions (t CO2)", "sector_label": ""},
                 )
                 fig_trend.update_xaxes(type="category")
                 fig_trend.update_layout(
@@ -775,12 +791,12 @@ with right_col:
             with st.container(border=True):
                 panel_title("4. Emissions Hierarchy Treemap (Sector > Subsector)")
                 treemap_df = (
-                    filtered_df.groupby(["sector_label", "subsector_label"], dropna=False)["emissions_mt"]
+                    filtered_df.groupby(["sector_label", "subsector_label"], dropna=False)[EMISSIONS_COL]
                     .sum()
                     .reset_index()
                 )
                 sector_tree_totals = (
-                    treemap_df.groupby("sector_label", dropna=False)["emissions_mt"]
+                    treemap_df.groupby("sector_label", dropna=False)[EMISSIONS_COL]
                     .sum()
                     .sort_values(ascending=False)
                 )
@@ -789,7 +805,7 @@ with right_col:
 
                 ids, labels, parents, values = [], [], [], []
                 node_text, hover_text, colors = [], [], []
-                total_tree_emissions = float(treemap_df["emissions_mt"].sum())
+                total_tree_emissions = float(treemap_df[EMISSIONS_COL].sum())
 
                 for sector in ordered_sectors:
                     sector_total = float(sector_tree_totals.get(sector, 0))
@@ -803,24 +819,24 @@ with right_col:
                     labels.append(sector)
                     parents.append("")
                     values.append(sector_total)
-                    node_text.append(f"{format_mt_precise(sector_total)}<br>({sector_share:.1f}%)")
+                    node_text.append(f"{format_tonnes_precise(sector_total)}<br>({sector_share:.1f}%)")
                     hover_text.append(
-                        f"<b>{sector}</b><br>{format_mt_precise(sector_total)}<br>{sector_share:.1f}% of total<extra></extra>"
+                        f"<b>{sector}</b><br>{format_tonnes_precise(sector_total)}<br>{sector_share:.1f}% of total<extra></extra>"
                     )
                     colors.append(sector_color)
 
                     child_color = lighten_hex(sector_color, 0.10)
-                    for _, row_s in treemap_df[treemap_df["sector_label"] == sector].sort_values("emissions_mt", ascending=False).iterrows():
-                        child_total = float(row_s["emissions_mt"])
+                    for _, row_s in treemap_df[treemap_df["sector_label"] == sector].sort_values(EMISSIONS_COL, ascending=False).iterrows():
+                        child_total = float(row_s[EMISSIONS_COL])
                         child_label = str(row_s["subsector_label"])
                         child_share = (child_total / sector_total * 100) if sector_total else 0
                         ids.append(f"{sector_id}::{child_label}")
                         labels.append(wrap_treemap_label(child_label))
                         parents.append(sector_id)
                         values.append(child_total)
-                        node_text.append(format_mt_precise(child_total))
+                        node_text.append(format_tonnes_precise(child_total))
                         hover_text.append(
-                            f"<b>{child_label}</b><br>{format_mt_precise(child_total)}<br>{child_share:.1f}% of {sector}<extra></extra>"
+                            f"<b>{child_label}</b><br>{format_tonnes_precise(child_total)}<br>{child_share:.1f}% of {sector}<extra></extra>"
                         )
                         colors.append(child_color)
 
@@ -861,19 +877,21 @@ with right_col:
                 with header_cols[0]:
                     panel_title("Raw Data Preview")
                 with header_cols[1]:
-                    export_cols = ["name", "sector_label", "subsector_label", "emissions_mt", "year"]
+                    export_cols = ["name", "sector_label", "subsector_label", EMISSIONS_COL, "year"]
                     export_cols = [c for c in export_cols if c in filtered_df.columns]
                     export_df = filtered_df[export_cols].copy()
+                    export_df = export_df.rename(columns={EMISSIONS_COL: "emissions_tonnes"})
                     st.download_button(
                         label="Download CSV",
                         data=export_df.to_csv(index=False).encode("utf-8"),
                         file_name="filtered_sri_lanka_emissions.csv",
                         mime="text/csv",
                     )
-                preview_cols = ["name", "sector_label", "subsector_label", "emissions_mt", "year"]
+                preview_cols = ["name", "sector_label", "subsector_label", EMISSIONS_COL, "year"]
                 preview_cols = [c for c in preview_cols if c in filtered_df.columns]
-                preview_df = filtered_df[preview_cols].sort_values("emissions_mt", ascending=False).head(6).copy()
-                preview_df["emissions_mt"] = preview_df["emissions_mt"].map(lambda x: f"{x:,.3f}")
+                preview_df = filtered_df[preview_cols].sort_values(EMISSIONS_COL, ascending=False).head(6).copy()
+                preview_df = preview_df.rename(columns={EMISSIONS_COL: "emissions_tonnes"})
+                preview_df["emissions_tonnes"] = preview_df["emissions_tonnes"].map(lambda x: f"{x:,.0f}")
                 st.markdown(
                     f"<div class='table-scroll-wrapper'>{preview_df.to_html(index=False, classes='data-table', border=0)}</div>",
                     unsafe_allow_html=True,
@@ -888,13 +906,13 @@ with right_col:
                 top_locations = location_totals.head(top_n).copy()
                 top_locations["location_label"] = top_locations["name"].map(lambda x: compact_text(x, 28))
                 fig_top = px.bar(
-                    top_locations.sort_values("emissions_mt"),
-                    x="emissions_mt",
+                    top_locations.sort_values(EMISSIONS_COL),
+                    x=EMISSIONS_COL,
                     y="location_label",
                     orientation="h",
-                    text_auto=".2f",
+                    text_auto=".3s",
                     color_discrete_sequence=[TEAL],
-                    labels={"emissions_mt": "Emissions (Mt CO2)", "location_label": ""},
+                    labels={EMISSIONS_COL: "Emissions (t CO2)", "location_label": ""},
                 )
                 fig_top.update_traces(width=0.46)
                 fig_top.update_layout(showlegend=False, bargap=0.4)
@@ -916,19 +934,19 @@ with right_col:
                 )
                 breakdown_df = filtered_df[filtered_df["sector_label"] == selected_breakdown_sector].copy()
                 breakdown_totals = (
-                    breakdown_df.groupby("subsector_label", dropna=False)["emissions_mt"]
+                    breakdown_df.groupby("subsector_label", dropna=False)[EMISSIONS_COL]
                     .sum()
                     .reset_index()
-                    .sort_values("emissions_mt", ascending=False)
+                    .sort_values(EMISSIONS_COL, ascending=False)
                 )
                 breakdown_totals["subsector_short"] = breakdown_totals["subsector_label"].map(lambda x: compact_text(x, 20))
                 fig_break = px.bar(
                     breakdown_totals,
                     x="subsector_short",
-                    y="emissions_mt",
+                    y=EMISSIONS_COL,
                     color_discrete_sequence=[SECTOR_COLORS.get(selected_breakdown_sector, CYAN)],
-                    text_auto=".2f",
-                    labels={"subsector_short": "", "emissions_mt": "Emissions (Mt CO2)"},
+                    text_auto=".3s",
+                    labels={"subsector_short": "", EMISSIONS_COL: "Emissions (t CO2)"},
                 )
                 fig_break.update_traces(width=0.4)
                 fig_break.update_layout(showlegend=False, bargap=0.5)
@@ -940,7 +958,7 @@ with right_col:
             with st.container(border=True):
                 panel_title("7. Subsector Emissions: 2024 vs 2025")
                 breakdown_year = (
-                    breakdown_df.groupby(["subsector_label", "year"], dropna=False)["emissions_mt"]
+                    breakdown_df.groupby(["subsector_label", "year"], dropna=False)[EMISSIONS_COL]
                     .sum()
                     .reset_index()
                     .sort_values(["subsector_label", "year"])
@@ -950,12 +968,12 @@ with right_col:
                 fig_compare = px.bar(
                     breakdown_year,
                     x="subsector_short",
-                    y="emissions_mt",
+                    y=EMISSIONS_COL,
                     color="year",
                     barmode="group",
-                    text_auto=".2f",
+                    text_auto=".3s",
                     color_discrete_sequence=[TEAL, GREEN],
-                    labels={"subsector_short": "", "emissions_mt": "Emissions (Mt CO2)", "year": ""},
+                    labels={"subsector_short": "", EMISSIONS_COL: "Emissions (t CO2)", "year": ""},
                 )
                 fig_compare.update_layout(
                     bargap=0.45,
@@ -994,7 +1012,7 @@ with right_col:
             value=f"{top_sector_name} - {top_sector_share:.1f}%",
             body=(
                 f"{top_sector_name} contributes <b>{top_sector_share:.1f}%</b> of total emissions "
-                f"({format_mt(top_sector_value)}), making it by far the largest source of CO2 in the dataset."
+                f"({format_tonnes(top_sector_value)}), making it by far the largest source of CO2 in the dataset."
             ),
         )
 
@@ -1043,12 +1061,12 @@ with right_col:
             value=f"{smallest_sector_name} - {smallest_sector_share:.1f}%",
             body=(
                 f"<b>{smallest_sector_name}</b> contributes only <b>{smallest_sector_share:.1f}%</b> "
-                f"({format_mt(float(smallest_sector_val))}) of total emissions - the smallest sectoral share, "
+                f"({format_tonnes(float(smallest_sector_val))}) of total emissions - the smallest sectoral share, "
                 f"suggesting relatively limited industrial CO2 output."
             ),
         )
 
     st.markdown(
-        "<div class='footnote'>All emissions are measured in Million Tonnes of CO2 (Mt CO2). Insights are computed dynamically from the filtered dataset.</div>",
+        "<div class='footnote'>All emissions are measured in metric tonnes of CO2 (t CO2). Chart labels may use compact notation for readability.</div>",
         unsafe_allow_html=True,
     )

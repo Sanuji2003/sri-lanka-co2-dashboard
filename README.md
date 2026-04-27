@@ -1,6 +1,6 @@
 # Sri Lanka CO2 Dashboard
 
-Streamlit dashboard for exploring Sri Lanka CO2 equivalent emissions data for 2024 and 2025.
+Streamlit dashboard for exploring Sri Lanka CO2 equivalent emissions data for 2024 and 2025 in metric tonnes.
 
 ## Files
 
