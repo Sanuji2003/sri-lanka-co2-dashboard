@@ -184,11 +184,10 @@ def panel_title(title: str):
     st.markdown(f"<div class='panel-title'>{title}</div>", unsafe_allow_html=True)
 
 
-def render_insight(col, accent: str, icon: str, headline: str, value: str, body: str):
+def render_insight(col, accent: str, headline: str, value: str, body: str):
     col.markdown(
         f"""
         <div class="insight-card" style="border-left-color:{accent};">
-            <div class="insight-icon" style="color:{accent};">{icon}</div>
             <div class="insight-headline">{headline}</div>
             <div class="insight-value" style="color:{accent};">{value}</div>
             <div class="insight-body">{body}</div>
@@ -423,9 +422,6 @@ st.markdown(
         padding: 0.44rem 0.54rem;
         height: 100%;
         min-height: 96px;
-    }}
-    .insight-icon {{
-        font-size: 0.96rem; line-height: 1; margin-bottom: 0.12rem;
     }}
     .insight-headline {{
         color: {TEXT_MUTED}; font-size: 0.62rem; font-weight: 700;
@@ -1007,7 +1003,6 @@ with right_col:
         render_insight(
             ins_cols[0],
             accent=TEAL,
-            icon="S",
             headline="Dominant Sector",
             value=f"{top_sector_name} - {top_sector_share:.1f}%",
             body=(
@@ -1019,7 +1014,6 @@ with right_col:
         render_insight(
             ins_cols[1],
             accent=CYAN,
-            icon="L",
             headline="Emission Hotspot Concentration",
             value=f"Top 2 = {top2_share:.1f}% of total",
             body=(
@@ -1032,7 +1026,6 @@ with right_col:
             render_insight(
                 ins_cols[2],
                 accent=YELLOW,
-                icon="Y",
                 headline="Year-on-Year Growth",
                 value=f"+{overall_yoy_pct:.1f}% overall ({yr_a}->{yr_b})",
                 body=(
@@ -1044,7 +1037,6 @@ with right_col:
             render_insight(
                 ins_cols[2],
                 accent=YELLOW,
-                icon="D",
                 headline="Dominant Subsector",
                 value=f"{compact_text(dom_sub, 22)} - {dom_sub_share:.1f}%",
                 body=(
@@ -1056,7 +1048,6 @@ with right_col:
         render_insight(
             ins_cols[3],
             accent=RED,
-            icon="M",
             headline="Lowest Emitting Sector",
             value=f"{smallest_sector_name} - {smallest_sector_share:.1f}%",
             body=(
