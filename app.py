@@ -1057,7 +1057,3 @@ with right_col:
             ),
         )
 
-    st.markdown(
-        "<div class='footnote'>All emissions are measured in metric tonnes of CO2 (t CO2). Chart labels may use compact notation for readability.</div>",
-        unsafe_allow_html=True,
-    )
